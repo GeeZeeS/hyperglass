@@ -76,6 +76,28 @@ class Link(HyperglassModel):
     order: StrictInt = 0
 
 
+class Custom(HyperglassModel):
+    """Validation model for generic menu."""
+
+    title: StrictStr
+    content: StrictStr
+    side: Side = "left"
+    order: StrictInt = 0
+
+    @validator("content")
+    def validate_content(cls, value):
+        """Read content from file if a path is provided."""
+
+        if len(value) < 260:
+            path = Path(value)
+            if path.exists():
+                with path.open("r") as f:
+                    return f.read()
+            else:
+                return value
+        return value
+
+
 class Menu(HyperglassModel):
     """Validation model for generic menu."""
 
@@ -252,6 +274,10 @@ class Web(HyperglassModel):
     menus: Sequence[Menu] = [
         Menu(title="Terms", content=DEFAULT_TERMS),
         Menu(title="Help", content=DEFAULT_HELP),
+    ]
+    customs: Sequence[Menu] = [
+        Custom(title="Terms", content=DEFAULT_TERMS),
+        Custom(title="Help", content=DEFAULT_HELP),
     ]
     greeting: Greeting = Greeting()
     logo: Logo = Logo()
