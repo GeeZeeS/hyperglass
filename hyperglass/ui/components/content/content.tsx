@@ -13,8 +13,6 @@ import { If, Markdown } from '~/components';
 import { useConfig, useColorValue } from '~/context';
 import { useGreeting, useOpposingColor } from '~/hooks';
 
-import type { TGreeting } from './types';
-
 export const Greeting: React.FC<TGreeting> = (props: TGreeting) => {
   const { web, content } = useConfig();
   const { ack: greetingAck, isOpen, close } = useGreeting();
