@@ -1,75 +1,95 @@
-import { useEffect } from 'react';
-import {
-  Modal,
-  Button,
-  ModalBody,
-  ModalHeader,
-  ModalFooter,
-  ModalOverlay,
-  ModalContent,
-  ModalCloseButton,
-} from '@chakra-ui/react';
-import { If, Markdown } from '~/components';
-import { useConfig, useColorValue } from '~/context';
-import { useGreeting, useOpposingColor } from '~/hooks';
+import { useMemo } from 'react';
+import dynamic from 'next/dynamic';
+import { Flex, Icon, HStack, useToken } from '@chakra-ui/react';
+import { If } from '~/components';
+import { useConfig, useMobile, useColorValue, useBreakpointValue } from '~/context';
+import { useStrf } from '~/hooks';
+import { FooterButton } from './button';
+import { ColorModeToggle } from './colorMode';
+import { FooterLink } from './link';
+import { isLink, isMenu } from './types';
 
-export const Greeting: React.FC<TGreeting> = (props: TGreeting) => {
-  const { web, content } = useConfig();
-  const { ack: greetingAck, isOpen, close } = useGreeting();
+import type { ButtonProps, LinkProps } from '@chakra-ui/react';
+import type { TLink, TMenu } from '~/types';
 
-  const bg = useColorValue('white', 'gray.800');
-  const color = useOpposingColor(bg);
+const CodeIcon = dynamic<MeronexIcon>(() => import('@meronex/icons/fi').then(i => i.FiCode));
+const ExtIcon = dynamic<MeronexIcon>(() => import('@meronex/icons/go').then(i => i.GoLinkExternal));
 
-  function handleClose(ack: boolean = false): void {
-    if (web.greeting.required && !greetingAck.value && !ack) {
-      greetingAck.set(false);
-    } else if (web.greeting.required && !greetingAck.value && ack) {
-      greetingAck.set(true);
-      close();
-    } else if (web.greeting.required && greetingAck.value) {
-      close();
-    } else if (!web.greeting.required) {
-      greetingAck.set(true);
-      close();
-    }
-  }
-  useEffect(() => {
-    if (!greetingAck.value && web.greeting.enable) {
-      isOpen.set(true);
-    }
-  }, []);
+function buildItems(links: TLink[], menus: TMenu[]): [(TLink | TMenu)[], (TLink | TMenu)[]] {
+  const leftLinks = links.filter(link => link.side === 'left');
+  const leftMenus = menus.filter(menu => menu.side === 'left');
+  const rightLinks = links.filter(link => link.side === 'right');
+  const rightMenus = menus.filter(menu => menu.side === 'right');
+
+  const left = [...leftLinks, ...leftMenus].sort((a, b) => (a.order > b.order ? 1 : -1));
+  const right = [...rightLinks, ...rightMenus].sort((a, b) => (a.order > b.order ? 1 : -1));
+  return [left, right];
+}
+
+export const Footer: React.FC = () => {
+  const { web, content, primary_asn } = useConfig();
+
+  const footerBg = useColorValue('blackAlpha.50', 'whiteAlpha.100');
+  const footerColor = useColorValue('black', 'white');
+
+  const size = useBreakpointValue({ base: useToken('sizes', 4), lg: useToken('sizes', 6) });
+
+  const isMobile = useMobile();
+
+  const [left, right] = useMemo(() => buildItems(web.links, web.menus), []);
+
   return (
-    <Modal
-      size="lg"
-      isCentered
-      onClose={handleClose}
-      isOpen={isOpen.value}
-      motionPreset="slideInBottom"
-      closeOnEsc={web.greeting.required}
-      closeOnOverlayClick={web.greeting.required}
+    <HStack
+      px={6}
+      py={4}
+      w="100%"
+      zIndex={1}
+      as="footer"
+      bg={footerBg}
+      whiteSpace="nowrap"
+      color={footerColor}
+      spacing={{ base: 8, lg: 6 }}
+      d={{ base: 'inline-block', lg: 'flex' }}
+      overflowY={{ base: 'auto', lg: 'unset' }}
+      justifyContent={{ base: 'center', lg: 'space-between' }}
     >
-      <ModalOverlay />
-      <ModalContent
-        py={4}
-        bg={bg}
-        color={color}
-        borderRadius="md"
-        maxW={{ base: '95%', md: '75%' }}
-        {...props}
-      >
-        <ModalHeader>{web.greeting.title}</ModalHeader>
-        <If c={!web.greeting.required}>
-          <ModalCloseButton />
-        </If>
-        <ModalBody>
-          <Markdown content={content.greeting} />
-        </ModalBody>
-        <ModalFooter>
-          <Button colorScheme="primary" onClick={() => handleClose(true)}>
-            {web.greeting.button}
-          </Button>
-        </ModalFooter>
-      </ModalContent>
-    </Modal>
+      {left.map(item => {
+        if (isLink(item)) {
+          const url = useStrf(item.url, { primary_asn }) ?? '/';
+          const icon: Partial<ButtonProps & LinkProps> = {};
+
+          if (item.show_icon) {
+            icon.rightIcon = <ExtIcon />;
+          }
+          return <FooterLink key={item.title} href={url} title={item.title} {...icon} />;
+        } else if (isMenu(item)) {
+          return (
+            <FooterButton key={item.title} side="left" content={item.content} title={item.title} />
+          );
+        }
+      })}
+      {!isMobile && <Flex p={0} flex="1 0 auto" maxWidth="100%" mr="auto" />}
+      {right.map(item => {
+        if (isLink(item)) {
+          const url = useStrf(item.url, { primary_asn }) ?? '/';
+          const icon: Partial<ButtonProps & LinkProps> = {};
+
+          if (item.show_icon) {
+            icon.rightIcon = <ExtIcon />;
+          }
+          return <FooterLink href={url} title={item.title} {...icon} />;
+        } else if (isMenu(item)) {
+          return <FooterButton side="right" content={item.content} title={item.title} />;
+        }
+      })}
+      <If c={web.credit.enable}>
+        <FooterButton
+          side="right"
+          content={content.credit}
+          title={<Icon as={CodeIcon} boxSize={size} />}
+        />
+      </If>
+      <ColorModeToggle size={size} />
+    </HStack>
   );
 };
