@@ -5,6 +5,7 @@ export * from './debugger';
 export * from './footer';
 export * from './form';
 export * from './greeting';
+export * from './content';
 export * from './header';
 export * from './help';
 export * from './label';
