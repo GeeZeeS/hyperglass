@@ -26,7 +26,7 @@ function buildItems(links: TLink[], menus: TMenu[]): [(TLink | TMenu)[], (TLink 
   return [left, right];
 }
 
-export const Footer: React.FC = () => {
+export const Content: React.FC = () => {
   const { web, content, primary_asn } = useConfig();
 
   const footerBg = useColorValue('blackAlpha.50', 'whiteAlpha.100');
@@ -44,7 +44,7 @@ export const Footer: React.FC = () => {
       py={4}
       w="100%"
       zIndex={1}
-      as="footer"
+      as="content"
       bg={footerBg}
       whiteSpace="nowrap"
       color={footerColor}
